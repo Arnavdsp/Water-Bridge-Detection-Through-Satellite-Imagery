@@ -14,15 +14,12 @@ The project initially explored the GLH-Bridge dataset, a very high-resolution br
 
 The project therefore pivoted to DOTA v1.0, a benchmark aerial object detection dataset with pre-tiled 1024×1024 crops optimized for GPU-constrained training.
 
-The final system includes:
+The repository has two notebooks:
 
-* YOLOv8-OBB based bridge detection
-* Water-aware annotation filtering
-* Oriented bounding box detection
-* Confidence distribution analysis
-* Augmentation-driven rare-class optimization
-* Comparative study between YOLOv8n and YOLOv8s
-* Practical analysis of dataset engineering constraints
+* `dota_yolov8_obb.ipynb`: YOLOv8n-OBB and YOLOv8s-OBB on DOTA v1.0 (oriented boxes, all 15 classes, bridge AP reported separately)
+* `glh_water_bridges_yolov8s.ipynb`: water-aware filtering of GLH-Bridge annotations, then an axis-aligned YOLOv8s trained on the filtered bridges, downscaled to 640 px
+
+The report (`Bridge_Detection_Report.pdf`) and slides (`Bridge_Detection_Presentation.pptx`) cover both.
 
 ---
 
@@ -102,9 +99,13 @@ Downsampling extremely large images:
 
 ---
 
+## What the GLH run did
+
+Full-resolution training was not feasible, so `glh_water_bridges_yolov8s.ipynb` trains on GLH-Bridge downscaled to 640 px with an axis-aligned YOLOv8s, after keeping only bridges over water (see [Water-Aware Filtering](#water-aware-filtering)): 3,463 train and 1,145 val images. Validation mAP@50 was still rising (0.10 at epoch 1, about 0.33 by epoch 60) when the notebook's output ends, partway through epoch 61. The saved output has no final evaluation.
+
 ## Pivot to DOTA v1.0
 
-Due to the above constraints, the project pivoted to DOTA v1.0 because it provides:
+For oriented boxes on pre-tiled imagery, the project moved to DOTA v1.0 because it provides:
 
 * Pre-tiled 1024×1024 crops
 * GPU-ready dataset structure
@@ -138,7 +139,7 @@ Bridges are heavily underrepresented:
 | Training   | 2,047            |
 | Validation | 464              |
 
-Only ~15% of training tiles contain bridges.
+Only ~15% of training tiles contain bridges (210 of 1,411).
 
 This severe class imbalance significantly impacts bridge AP.
 
@@ -170,7 +171,7 @@ Bridge Detection Evaluation
 
 # Water-Aware Filtering
 
-A custom filtering strategy was implemented to retain only bridge-over-water annotations.
+Used on GLH-Bridge (`glh_water_bridges_yolov8s.ipynb`). A custom filtering strategy retains only bridge-over-water annotations.
 
 ## Process
 
@@ -186,13 +187,13 @@ Annotations were retained only if:
 Water Pixels ≥ 28%
 ```
 
-This reduced irrelevant bridge-like structures and improved dataset relevance.
+On GLH-Bridge this kept 26,460 of 32,873 training bridges (3,463 images) and 8,995 of 11,722 validation bridges (1,145 images).
 
 ---
 
 # Data Augmentation
 
-Because bridge instances are rare, aggressive augmentation was critical.
+Because bridge instances are rare, the DOTA runs use heavy augmentation (the YOLOv8s run adds copy-paste).
 
 ## Techniques Used
 
@@ -305,14 +306,18 @@ Predicts:
 
 # Results
 
-## Quantitative Performance
+## Quantitative Performance (DOTA v1.0 val, all classes)
+
+From the final validation pass of each run in `dota_yolov8_obb.ipynb`:
 
 | Metric    | YOLOv8n | YOLOv8s |
 | --------- | ------- | ------- |
 | mAP@50    | 51.6%   | 54.9%   |
-| mAP@50-95 | 34.0%   | 37.1%   |
-| Precision | 73.2%   | 78.3%   |
-| Recall    | 50.3%   | 52.8%   |
+| mAP@50-95 | 34.1%   | 37.1%   |
+| Precision | 73.8%   | 77.7%   |
+| Recall    | 50.4%   | 53.3%   |
+
+**What these numbers measure.** Both runs start from Ultralytics' `yolov8n-obb.pt` / `yolov8s-obb.pt`, which are already trained on DOTA v1.0. In both, the best validation epoch was epoch 1, and early stopping ended training after 11 (n) and 21 (s) epochs. So the table mostly reflects the pretrained checkpoints, and the n → s gap reflects model size. Fine-tuning with these augmentations did not improve on the starting weights.
 
 ---
 
@@ -320,9 +325,9 @@ Predicts:
 
 ## Bridge AP@50
 
-```text
-19.2%
-```
+| YOLOv8n | YOLOv8s |
+| ------- | ------- |
+| 16.1%   | 19.2%   |
 
 ---
 
@@ -358,7 +363,7 @@ Bridges occupy very few CNN feature cells.
 
 For tiny elongated objects:
 
-IoU = \frac{Area\ of\ Overlap}{Area\ of\ Union}
+$$IoU = \frac{Area\ of\ Overlap}{Area\ of\ Union}$$
 
 Even slight misalignment causes large IoU drops.
 
@@ -386,15 +391,15 @@ Dataset selection itself became a core methodological challenge.
 
 ---
 
-## OBB is Crucial for Aerial Imagery
+## OBB Suits Elongated Structures
 
-Rotated bounding boxes significantly improve localization for elongated structures.
+Rotated boxes fit thin, diagonal bridges far more tightly than axis-aligned boxes. The two notebooks use different datasets, so they don't measure this directly.
 
 ---
 
-## Augmentation Improves Rare-Class Detection
+## Fine-Tuning Did Not Beat the Pretrained Checkpoints
 
-Copy-paste augmentation was especially effective.
+On DOTA, neither run improved after epoch 1. Testing whether augmentation helps the rare bridge class needs a model that isn't already trained on DOTA, or a held-out bridge set.
 
 ---
 
@@ -412,6 +417,8 @@ Model performance depends not only on architecture, but also on:
 
 ## Planned Improvements
 
+* Fine-tune from COCO weights (or freeze the backbone) so the DOTA runs measure the training choices, not the pretrained checkpoint
+* Finish the GLH run and evaluate it
 * YOLOv8m / YOLOv8l upgrade
 * SegFormer-based water segmentation
 * Multi-class infrastructure detection
@@ -449,25 +456,21 @@ Model performance depends not only on architecture, but also on:
 # Repository Structure
 
 ```text
-project/
-│
-├── datasets/
-├── labels/
-├── notebooks/
-├── runs/
-├── checkpoints/
-├── visualizations/
-├── final_outputs/
-├── inference/
-└── README.md
+dota_yolov8_obb.ipynb               # DOTA v1.0: YOLOv8n-OBB vs YOLOv8s-OBB, bridge AP, plots
+glh_water_bridges_yolov8s.ipynb     # GLH-Bridge: water-aware filtering + YOLOv8s training
+Bridge_Detection_Report.pdf         # project report
+Bridge_Detection_Presentation.pptx  # slides
+README.md
 ```
+
+Datasets, weights and run outputs aren't in the repo. The notebooks download DOTA v1.0 through Ultralytics and read GLH-Bridge from a Kaggle dataset.
 
 ---
 
 # Citation
 
 ```bibtex
-@project{bridge_detection_yolov8_obb,
+@misc{bridge_detection_yolov8_obb,
   title={Bridge Detection over Water Bodies using YOLOv8-OBB},
   author={Arnav Deshpande, Apoorv Singh, Yash Dodiya},
   year={2026}
