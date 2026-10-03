@@ -317,7 +317,7 @@ From the final validation pass of each run in `dota_yolov8_obb.ipynb`:
 | Precision | 73.8%   | 77.7%   |
 | Recall    | 50.4%   | 53.3%   |
 
-**What these numbers measure.** Both runs start from Ultralytics' `yolov8n-obb.pt` / `yolov8s-obb.pt`, which are already trained on DOTA v1.0. In both, the best validation epoch was epoch 1, and early stopping ended training after 11 (n) and 21 (s) epochs. So the table mostly reflects the pretrained checkpoints, and the n → s gap reflects model size. Fine-tuning with these augmentations did not improve on the starting weights.
+**What these numbers measure.** Both runs start from Ultralytics' `yolov8n-obb.pt` / `yolov8s-obb.pt`, which are already trained on DOTA v1.0. In both, the best validation epoch was epoch 1, and early stopping ended training after 11 (n) and 21 (s) epochs. So the reported weights are the pretrained checkpoints after one epoch of fine-tuning, and further training with these augmentations didn't improve them. The notebook doesn't evaluate the untouched checkpoints, so how much of the score that one epoch adds isn't measured; the n → s gap is mostly model size.
 
 ---
 
@@ -397,7 +397,7 @@ Rotated boxes fit thin, diagonal bridges far more tightly than axis-aligned boxe
 
 ---
 
-## Fine-Tuning Did Not Beat the Pretrained Checkpoints
+## Training Stopped Improving After Epoch 1
 
 On DOTA, neither run improved after epoch 1. Testing whether augmentation helps the rare bridge class needs a model that isn't already trained on DOTA, or a held-out bridge set.
 
