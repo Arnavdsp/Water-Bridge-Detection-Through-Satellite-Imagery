@@ -1,18 +1,14 @@
 # Bridge Detection over Water Bodies using YOLOv8-OBB
 
-## Deep Learning-Based Aerial Bridge Detection under Real-World Computational Constraints
-
-Remote Sensing • Computer Vision • Oriented Object Detection • Deep Learning • Aerial AI
+Bridge detection in aerial imagery, under the GPU and storage limits of free Kaggle and Colab.
 
 ---
 
-# Overview
+## Overview
 
-This project presents an end-to-end deep learning pipeline for detecting bridges over water bodies in high-resolution aerial and satellite imagery using YOLOv8-Oriented Bounding Boxes (YOLOv8-OBB).
+An end-to-end pipeline for detecting bridges over water bodies in high-resolution aerial and satellite imagery using YOLOv8-Oriented Bounding Boxes (YOLOv8-OBB).
 
-The project initially explored the GLH-Bridge dataset, a very high-resolution bridge-specific dataset containing images up to 16,384×16,384 pixels. However, large-scale preprocessing and training proved infeasible under GPU and storage limitations on Kaggle and Google Colab environments.
-
-The project therefore pivoted to DOTA v1.0, a benchmark aerial object detection dataset with pre-tiled 1024×1024 crops optimized for GPU-constrained training.
+I started with GLH-Bridge, a bridge-specific dataset with images up to 16,384×16,384 pixels, but preprocessing and training it at full scale wasn't feasible within the GPU and storage limits of Kaggle and Colab. So I moved to DOTA v1.0, a standard aerial detection benchmark that comes pre-tiled into 1024×1024 crops, which fits on a small GPU.
 
 The repository has two notebooks:
 
@@ -23,7 +19,7 @@ The report (`Bridge_Detection_Report.pdf`) and slides (`Bridge_Detection_Present
 
 ---
 
-# Problem Statement
+## Problem statement
 
 Detecting bridges in aerial imagery is a difficult computer vision problem because:
 
@@ -44,13 +40,13 @@ This project investigates how oriented object detection and augmentation strateg
 
 ---
 
-# Dataset Journey: GLH-Bridge → DOTA v1.0
+## Dataset journey: GLH-Bridge → DOTA v1.0
 
-## Initial Dataset: GLH-Bridge
+### Initial dataset: GLH-Bridge
 
 The project initially selected the GLH-Bridge dataset because of its bridge-specific focus and extremely high-resolution imagery.
 
-### GLH Dataset Characteristics
+#### GLH dataset characteristics
 
 * ~6,000 bridge images
 * Resolution range:
@@ -63,9 +59,9 @@ The project initially selected the GLH-Bridge dataset because of its bridge-spec
 
 ---
 
-## Practical Challenges Encountered
+### Practical challenges encountered
 
-### 1. GPU Memory Constraints
+#### 1. GPU memory constraints
 
 Training on 16K images caused repeated:
 
@@ -77,7 +73,7 @@ Even batch size 1 was unstable.
 
 ---
 
-### 2. Disk Space Limitations
+#### 2. Disk space limitations
 
 Kaggle and Colab environments provide limited storage.
 
@@ -89,7 +85,7 @@ Issues encountered:
 
 ---
 
-### 3. Preprocessing Bottleneck
+#### 3. Preprocessing bottleneck
 
 Downsampling extremely large images:
 
@@ -99,11 +95,11 @@ Downsampling extremely large images:
 
 ---
 
-## What the GLH run did
+### What the GLH run did
 
 Full-resolution training was not feasible, so `glh_water_bridges_yolov8s.ipynb` trains on GLH-Bridge downscaled to 640 px with an axis-aligned YOLOv8s, after keeping only bridges over water (see [Water-Aware Filtering](#water-aware-filtering)): 3,463 train and 1,145 val images. Validation mAP@50 was still rising (0.10 at epoch 1, about 0.33 by epoch 60) when the notebook's output ends, partway through epoch 61. The saved output has no final evaluation.
 
-## Pivot to DOTA v1.0
+### Pivot to DOTA v1.0
 
 For oriented boxes on pre-tiled imagery, the project moved to DOTA v1.0 because it provides:
 
@@ -115,9 +111,9 @@ For oriented boxes on pre-tiled imagery, the project moved to DOTA v1.0 because 
 
 ---
 
-# DOTA v1.0 Dataset
+## DOTA v1.0 dataset
 
-## Dataset Overview
+### Dataset overview
 
 | Property         | Value                   |
 | ---------------- | ----------------------- |
@@ -130,7 +126,7 @@ For oriented boxes on pre-tiled imagery, the project moved to DOTA v1.0 because 
 
 ---
 
-## Bridge Class Challenge
+### Bridge class challenge
 
 Bridges are heavily underrepresented:
 
@@ -145,9 +141,9 @@ This severe class imbalance significantly impacts bridge AP.
 
 ---
 
-# Methodology
+## Methodology
 
-## Overall Pipeline
+### Overall pipeline
 
 ```text
 GLH Exploration / DOTA Dataset
@@ -169,11 +165,11 @@ Bridge Detection Evaluation
 
 ---
 
-# Water-Aware Filtering
+## Water-aware filtering
 
 Used on GLH-Bridge (`glh_water_bridges_yolov8s.ipynb`). A custom filtering strategy retains only bridge-over-water annotations.
 
-## Process
+### Process
 
 Bounding box regions were sampled using RGB heuristics:
 
@@ -191,43 +187,43 @@ On GLH-Bridge this kept 26,460 of 32,873 training bridges (3,463 images) and 8,9
 
 ---
 
-# Data Augmentation
+## Data augmentation
 
 Because bridge instances are rare, the DOTA runs use heavy augmentation (the YOLOv8s run adds copy-paste).
 
-## Techniques Used
+### Techniques used
 
-### Rotation Augmentation
+#### Rotation augmentation
 
 * Full 360° rotational robustness
 
-### Mosaic Augmentation
+#### Mosaic augmentation
 
 * Combines multiple scenes into one training sample
 
-### Copy-Paste Augmentation
+#### Copy-paste augmentation
 
 * Artificially increases bridge frequency
 
-### Flipping
+#### Flipping
 
 * Horizontal and vertical orientation invariance
 
-### Scaling & Translation
+#### Scaling & translation
 
 * Simulates altitude and positional variations
 
 ---
 
-# Model Architecture
+## Model architecture
 
-## YOLOv8-OBB
+### YOLOv8-OBB
 
 The project uses YOLOv8's Oriented Bounding Box variant.
 
 ---
 
-## Why OBB?
+### Why OBB?
 
 Normal bounding boxes are axis-aligned.
 
@@ -247,9 +243,9 @@ This enables tighter localization for aerial structures.
 
 ---
 
-## Architecture Components
+### Architecture components
 
-### Backbone — CSPDarkNet
+#### Backbone — CSPDarkNet
 
 Extracts:
 
@@ -259,7 +255,7 @@ Extracts:
 
 ---
 
-### Neck — PAN/FPN
+#### Neck — PAN/FPN
 
 Combines:
 
@@ -272,7 +268,7 @@ Enables:
 
 ---
 
-### Detection Head
+#### Detection head
 
 Predicts:
 
@@ -283,7 +279,7 @@ Predicts:
 
 ---
 
-# Model Variants
+## Model variants
 
 | Model       | Parameters | Role     |
 | ----------- | ---------- | -------- |
@@ -292,7 +288,7 @@ Predicts:
 
 ---
 
-# Training Configuration
+## Training configuration
 
 | Parameter  | YOLOv8n   | YOLOv8s   |
 | ---------- | --------- | --------- |
@@ -304,9 +300,9 @@ Predicts:
 
 ---
 
-# Results
+## Results
 
-## Quantitative Performance (DOTA v1.0 val, all classes)
+### Quantitative performance (DOTA v1.0 val, all classes)
 
 From the final validation pass of each run in `dota_yolov8_obb.ipynb`:
 
@@ -321,9 +317,9 @@ From the final validation pass of each run in `dota_yolov8_obb.ipynb`:
 
 ---
 
-# Bridge-Specific Performance
+## Bridge-specific performance
 
-## Bridge AP@50
+### Bridge AP@50
 
 | YOLOv8n | YOLOv8s |
 | ------- | ------- |
@@ -331,35 +327,35 @@ From the final validation pass of each run in `dota_yolov8_obb.ipynb`:
 
 ---
 
-# Why is Bridge AP Low?
+## Why is bridge AP low?
 
 Several reasons contribute:
 
-## 1. Severe Class Imbalance
+### 1. Severe class imbalance
 
 Bridges represent <2% of all DOTA instances.
 
 ---
 
-## 2. Thin Object Geometry
+### 2. Thin object geometry
 
 Small localization errors drastically reduce IoU.
 
 ---
 
-## 3. Visual Similarity to Roads
+### 3. Visual similarity to roads
 
 Roads and bridges appear structurally similar in aerial imagery.
 
 ---
 
-## 4. Limited Feature Resolution
+### 4. Limited feature resolution
 
 Bridges occupy very few CNN feature cells.
 
 ---
 
-## 5. IoU Sensitivity
+### 5. IoU sensitivity
 
 For tiny elongated objects:
 
@@ -369,7 +365,7 @@ Even slight misalignment causes large IoU drops.
 
 ---
 
-# Confidence Analysis
+## Confidence analysis
 
 The improved YOLOv8s model produced:
 
@@ -377,35 +373,33 @@ The improved YOLOv8s model produced:
 * higher confidence detections
 * fewer false positives
 
-## Key Insight
-
-The larger backbone becomes more selective and produces higher-quality detections.
+In short, the larger backbone was more selective and its detections were more confident.
 
 ---
 
-# Key Research Insights
+## Key research insights
 
-## Dataset Engineering Matters
+### Dataset engineering matters
 
-Dataset selection itself became a core methodological challenge.
+Choosing a dataset that fit the hardware turned out to be one of the main problems in this project.
 
 ---
 
-## OBB Suits Elongated Structures
+### OBB suits elongated structures
 
 Rotated boxes fit thin, diagonal bridges far more tightly than axis-aligned boxes. The two notebooks use different datasets, so they don't measure this directly.
 
 ---
 
-## Training Stopped Improving After Epoch 1
+### Training stopped improving after epoch 1
 
 On DOTA, neither run improved after epoch 1. Testing whether augmentation helps the rare bridge class needs a model that isn't already trained on DOTA, or a held-out bridge set.
 
 ---
 
-## Computational Constraints Affect Model Performance
+### Computational constraints affect model performance
 
-Model performance depends not only on architecture, but also on:
+Model performance depended on more than the architecture:
 
 * GPU availability
 * preprocessing feasibility
@@ -413,9 +407,9 @@ Model performance depends not only on architecture, but also on:
 
 ---
 
-# Future Work
+## Future work
 
-## Planned Improvements
+### Planned improvements
 
 * Fine-tune from COCO weights (or freeze the backbone) so the DOTA runs measure the training choices, not the pretrained checkpoint
 * Finish the GLH run and evaluate it
@@ -429,7 +423,7 @@ Model performance depends not only on architecture, but also on:
 
 ---
 
-# Technologies Used
+## Technologies used
 
 * Python
 * PyTorch
@@ -443,7 +437,7 @@ Model performance depends not only on architecture, but also on:
 
 ---
 
-# Hardware
+## Hardware
 
 | Hardware         | Usage                     |
 | ---------------- | ------------------------- |
@@ -453,7 +447,7 @@ Model performance depends not only on architecture, but also on:
 
 ---
 
-# Repository Structure
+## Repository structure
 
 ```text
 dota_yolov8_obb.ipynb               # DOTA v1.0: YOLOv8n-OBB vs YOLOv8s-OBB, bridge AP, plots
@@ -467,7 +461,7 @@ Datasets, weights and run outputs aren't in the repo. The notebooks download DOT
 
 ---
 
-# Citation
+## Citation
 
 ```bibtex
 @misc{bridge_detection_yolov8_obb,
@@ -479,7 +473,7 @@ Datasets, weights and run outputs aren't in the repo. The notebooks download DOT
 
 ---
 
-# Authors
+## Authors
 
 Arnav Deshpande
 Indian Institute of Technology Indore
@@ -492,7 +486,7 @@ Indian Institute of Technology Indore
 
 ---
 
-# Research Areas
+## Research areas
 
 * Computer Vision
 * Remote Sensing
@@ -504,6 +498,6 @@ Indian Institute of Technology Indore
 
 ---
 
-# Objective
+## Objective
 
-The primary objective of this project is to develop a robust deep learning pipeline for bridge detection in aerial imagery while simultaneously studying the impact of dataset engineering, computational constraints, and oriented object detection on real-world deployment feasibility.
+Build a bridge detector for aerial imagery, and see how dataset choices, compute limits and oriented boxes affect whether it can be deployed.
