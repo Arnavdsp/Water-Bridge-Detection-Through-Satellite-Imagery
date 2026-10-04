@@ -373,7 +373,7 @@ The improved YOLOv8s model produced:
 * higher confidence detections
 * fewer false positives
 
-In short, the larger backbone was more selective and its detections were more confident.
+On the sampled validation images (up to 100), the YOLOv8s checkpoint produced fewer bridge detections with a higher mean confidence. The two runs also used different training settings, so this isn't a clean backbone-only comparison.
 
 ---
 
